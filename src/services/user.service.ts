@@ -1,6 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { createUser, findUserByEmail } from '../dal/user.dal';
-import { findUserByPassword } from '../dal/user.dal';
+import {
+  findUserByPassword,
+  findUserByPassKey,
+  updateUserPassword,
+} from '../dal/user.dal';
 import { generateToken } from '../utils/jwt';
 
 interface LoginUserData {
@@ -14,6 +18,12 @@ interface RegisterUserData {
   email: string;
   password: string;
   passKey: string;
+}
+
+interface ResetPasswordData {
+  email: string;
+  passKey: string;
+  newPassword: string;
 }
 
 export const registerUserService = async (userData: RegisterUserData) => {
@@ -63,5 +73,44 @@ export const loginUserService = async (userData: LoginUserData) => {
       lastName: user.lastName,
       email: user.email,
     },
+  };
+};
+
+export const resetPasswordService = async (resetData: ResetPasswordData) => {
+  const { email, passKey, newPassword } = resetData;
+
+  if (!email || !passKey || !newPassword) {
+    throw new Error('Email, passKey and new password are required');
+  }
+
+  if (newPassword.length < 8) {
+    throw new Error('Password must contain at least 8 characters');
+  }
+
+  const user = await findUserByPassKey(email.toLowerCase());
+
+  if (!user) {
+    throw new Error('Invalid email or passKey');
+  }
+
+  const isPassKeyValid = await bcrypt.compare(passKey, user.passKey);
+
+  if (!isPassKeyValid) {
+    throw new Error('Invalid email or passKey');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+  const updatedUser = await updateUserPassword(
+    user._id.toString(),
+    hashedPassword,
+  );
+
+  if (!updatedUser) {
+    throw new Error('Unable to update password');
+  }
+
+  return {
+    message: 'Password reset successfully',
   };
 };

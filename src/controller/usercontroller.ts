@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
-import { registerUserService } from '../services/user.service';
+import {
+  registerUserService,
+  resetPasswordService,
+} from '../services/user.service';
 import { loginUserService } from '../services/user.service';
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -75,6 +78,38 @@ export const loginUser = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : 'Internal server error',
+    });
+  }
+};
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, passKey, newPassword } = req.body;
+
+    if (
+      typeof email !== 'string' ||
+      typeof passKey !== 'string' ||
+      typeof newPassword !== 'string'
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, passKey and new password are required',
+      });
+    }
+
+    const result = await resetPasswordService({
+      email,
+      passKey,
+      newPassword,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error: unknown) {
+    return res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Password reset failed',
     });
   }
 };
