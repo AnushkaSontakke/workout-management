@@ -32,7 +32,7 @@ export const updateWorkoutById = async (
     },
     updateData,
     {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     },
   );
